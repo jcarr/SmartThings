@@ -34,6 +34,7 @@
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
+		capability "Refresh"
 		
 		// CCs supported - 94, 134, 114, 132, 89, 133, 115, 113, 128, 48, 49, 112, 152, 122
 		attribute "tamper", "enum", ["detected", "clear"]
@@ -113,7 +114,7 @@
 			}
 		valueTile(
         	"humidity","device.humidity",inactiveLabel: false, width: 2, height: 2) {
-            	state "humidity",label:'RH ${currentValue} %',unit:""
+            	state "humidity",label:'RH ${currentValue}%',unit:""
 			}
 		valueTile(
         	"illuminance","device.illuminance",inactiveLabel: false, width: 2, height: 2) {
@@ -145,11 +146,14 @@
         	"configure","device.configure",inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 				state "configure", label:'config', action:"configure", icon:"st.secondary.tools"
 			}
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
 		main([
         	"motion","temperature","humidity","illuminance","tamper","ultravioletIndex"
             ])
 		details([
-        	"motion","temperature","humidity","illuminance","tamper","ultravioletIndex","battery","configure"
+        	"motion","temperature","humidity","illuminance","tamper","ultravioletIndex","battery","configure","refresh"
             ])
 	}
 	
