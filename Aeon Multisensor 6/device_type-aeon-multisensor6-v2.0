@@ -1,9 +1,9 @@
 /*
- * V 1.4 of Multisensor 6 code 9/14/2015
+ * V 2.0 of Multisensor 6 code 9/14/2015
  * Uses some original code from @Duncan Aeon Multisensor 6 code for secure configuration, Copyright 2015 SmartThings, modified for setting
  * preferences around configuration and the reporting of tampering and ultraviolet index, and reconfiguration after pairing.
- * Robert Vandervoort 6/19/2015 - 9/20/2015
- * - I like the motion being the large primary sensor - jcarr 9/23/2015
+ * 2.0 brings about the new style look with multiattribute tile for temp and humidity
+ * Robert Vandervoort 6/19/2015 - 11/5/2015
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -25,7 +25,7 @@
  */
 
  metadata {
-	definition (name: "Aeon Multisensor 6 - jcarr", namespace: "jcarr", author: "Jason Carr") {
+	definition (name: "Aeon Multisensor 6 - RV 2.0", namespace: "robertvandervoort", author: "Robert Vandervoort") {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -34,7 +34,6 @@
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
-		capability "Refresh"
 		
 		// CCs supported - 94, 134, 114, 132, 89, 133, 115, 113, 128, 48, 49, 112, 152, 122
 		attribute "tamper", "enum", ["detected", "clear"]
@@ -94,14 +93,28 @@
 			).incomingMessage()
 		status "wake up": "command: 8407, payload:"
 	}
-	tiles(scale: 2) {
-			multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
-			}
+	tiles (scale: 2) {
+		multiAttributeTile(name:"main", type:"generic", width:6, height:4) {
+			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+            	attributeState "temperature",label:'${currentValue}°',backgroundColors:[
+                	[value: 32, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 92, color: "#d04e00"],
+					[value: 98, color: "#bc2323"]
+				]
+            }
+            tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+                attributeState "humidity",label:'RH ${currentValue} %',unit:""
+            }
 		}
-		valueTile("temperature","device.temperature",inactiveLabel: false, width: 2, height: 2) {
+        standardTile("motion","device.motion", width: 2, height: 2) {
+            	state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#53a7c0"
+                state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
+			}
+		valueTile("temperature","device.temperature", width: 2, height: 2) {
             	state "temperature",label:'${currentValue}°',backgroundColors:[
                 	[value: 32, color: "#153591"],
                     [value: 44, color: "#1e9cbb"],
@@ -113,11 +126,7 @@
 				]
 			}
 		valueTile(
-        	"humidity","device.humidity",inactiveLabel: false, width: 2, height: 2) {
-            	state "humidity",label:'RH ${currentValue}%',unit:""
-			}
-		valueTile(
-        	"illuminance","device.illuminance",inactiveLabel: false, width: 2, height: 2) {
+        	"illuminance","device.illuminance", width: 2, height: 2) {
             	state "luminosity",label:'${currentValue} ${unit}', unit:"lux", backgroundColors:[
                 	[value: 0, color: "#000000"],
                     [value: 1, color: "#060053"],
@@ -130,7 +139,7 @@
 				]
 			}
 		valueTile(
-        	"ultravioletIndex","device.ultravioletIndex",inactiveLabel: false, width: 2, height: 2) {
+        	"ultravioletIndex","device.ultravioletIndex", width: 2, height: 2) {
 				state "ultravioletIndex",label:'${currentValue} UV INDEX',unit:""
 			}
 		standardTile(
@@ -139,21 +148,18 @@
                 state "clear",label:'clear',icon:"st.motion.motion.inactive",backgroundColor:"#00ff00"
 			}
 		valueTile(
-			"battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			"battery", "device.battery", decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 		standardTile(
-        	"configure","device.configure",inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	"configure","device.configure", decoration: "flat", width: 2, height: 2) {
 				state "configure", label:'config', action:"configure", icon:"st.secondary.tools"
 			}
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
 		main([
-        	"motion","temperature","humidity","illuminance","tamper","ultravioletIndex"
+        	"main"
             ])
 		details([
-        	"motion","temperature","humidity","illuminance","tamper","ultravioletIndex","battery","configure","refresh"
+        	"main","illuminance","ultravioletIndex","motion","tamper","battery","configure"
             ])
 	}
 	
@@ -162,7 +168,7 @@
 			"number",
 			title: "Temperature offset",
             description: "negative values reduce the monitored value positive ones add to it",
-            range: "..",
+            range: "-11..11",
 			defaultValue: 0,
             required: false,
             displayDuringSetup: false
@@ -170,7 +176,7 @@
         	"number",
             title: "Humidity offset",
             description: "negative values reduce the monitored value positive ones add to it",
-			range: "..",
+			range: "-50..50",
 			defaultValue: 0,
 			required: false,
             displayDuringSetup: false
@@ -178,7 +184,7 @@
           	"number",
             title: "Luminance offset",
             description: "negative values reduce the monitored value positive ones add to it",
-            range: "..",
+            range: "-1000..1000",
 			defaultValue: 0,
             required: false,
 	        displayDuringSetup: false
@@ -186,7 +192,7 @@
           	"number",
             title: "Ultraviolet offset",
             description: "negative values reduce the monitored value positive ones add to it",
-            range: "..",
+            range: "-10..10",
 			defaultValue: 0,
 	        required: false,
 			displayDuringSetup: false
@@ -194,9 +200,17 @@
 	        "number",
     	    title: "PIR motion sensitivity",
 			description: "A value from 0-5, from disabled to high sensitivity",
+			range: "0..5",
 			defaultValue: 1,
 			required: true,
 			displayDuringSetup: true
+		input "MotionReset",
+	        "number",
+    	    title: "PIR reset time",
+			description: "Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.",
+			defaultValue: 20,
+			required: true,
+			displayDuringSetup: true            
 		input "ReportingInterval",
         	"number",
             title: "Report data interval",
@@ -260,6 +274,14 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
 	response(configure())
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+    log.debug "---CONFIGURATION REPORT V2--- ${device.displayName} parameter ${cmd.parameterNumber} with a byte size of ${cmd.size} is set to ${cmd.configurationValue}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+    log.debug "---CONFIGURATION REPORT V1--- ${device.displayName} parameter ${cmd.parameterNumber} with a byte size of ${cmd.size} is set to ${cmd.configurationValue}"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -359,11 +381,15 @@ def configure() {
 	//	return []
 	//}
 	log.debug "--Sending configuration command to Multisensor 6--"
-    //log.debug "Prefernces settings: PIRsensitivity: $PIRsensitivity, Reporting Interval: $ReportingInterval, Temp offset: $tempoffset, Humidity offset: $humidityoffset, Luminance offset: $luminanceoffset, UV offset: $ultravioletoffset"
+    log.debug "Prefernces settings: PIRsensitivity: $PIRsensitivity, Reporting Interval: $ReportingInterval, Temp offset: $tempoffset, Humidity offset: $humidityoffset, Luminance offset: $luminanceoffset, UV offset: $ultravioletoffset"
 	
 	def PIRsens = 1
 	if (PIRsensitivity) {
 		PIRsens=PIRsensitivity.toInteger()
+	}
+    def MotionRst = 20
+	if (MotionReset) {
+		MotionRst=MotionReset.toInteger()
 	}
 	def ReportingInt = 300
 	if (ReportingInterval) {
@@ -371,41 +397,21 @@ def configure() {
 	}
 	def tempoff = 0
 	if (tempoffset) {
-		if(tempoffset < 0) {
-			tempoff=(255-tempoffset)
-		}
-		if(tempoffset > 0) {
-			tempoff=(0+tempoffset)
-		}
+		tempoff=tempoffset*10
 	}
 	def humidityoff = 0
 	if (humidityoffset) {
-		if(humidityoffset < 0) {
-			humidityoff=(255-humidityoffset)
-		}
-		if(humidityoffset > 0) {
-			humidityoff=(0+humidityoffset)
-		}
+		humidityoff=humidityoffset
 	}
 	def luminanceoff = 0
 	if (luminanceoffset) {
-		if(luminanceoffset < 0) {
-			luminanceoff=(255-luminanceoffset)
-		}
-		if(luminanceoffset > 0) {
-			luminanceoff=(0+luminanceoffset)
-		}
+		luminanceoff=luminanceoffset
 	}
 	def ultravioletoff = 0
 	if (ultravioletoffset) {
-		if(ultravioletoffset < 0) {
-			ultravioletoff=(255-ultravioletoffset)
-		}
-		if(ultravioletoffset > 0) {
-			ultravioletoff=(0 + ultravioletoffset)
-		}
+		ultravioletoff=ultravioletoffset
 	}
-    //log.debug "Setting - PIRsens: $PIRsens, ReportingInt: $ReportingInt, Tempoffset: $tempoff, Humidityoff: $humidityoff, Luminanceoff: $luminanceoff, UVoff: $ultravioletoff"
+    log.debug "Setting - PIRsens: $PIRsens, ReportingInt: $ReportingInt, Tempoffset: $tempoff, Humidityoff: $humidityoff, Luminanceoff: $luminanceoff, UVoff: $ultravioletoff"
 	def request = [
 		// set wakeup interval to 5 mins
 		zwave.wakeUpV1.wakeUpIntervalSet(seconds:300, nodeid:zwaveHubNodeId),
@@ -421,7 +427,7 @@ def configure() {
 		zwave.configurationV1.configurationSet(parameterNumber: 0x70, size: 4, scaledConfigurationValue: 20*60*60),
 		
         // send no-motion report 20 seconds after motion stops
-		zwave.configurationV1.configurationSet(parameterNumber: 0x03, size: 2, scaledConfigurationValue: 20),
+		zwave.configurationV1.configurationSet(parameterNumber: 0x03, size: 2, scaledConfigurationValue: MotionRst),
 		
 		// enable motion sensor and set sensitivity
         zwave.configurationV1.configurationSet(parameterNumber: 0x04, size: 1, scaledConfigurationValue: PIRsens),
@@ -436,16 +442,25 @@ def configure() {
 		// zwave.notificationV3.notificationSet(notificationType: 7, notificationStatus: 0),
 		
         // configure temp offset
-		zwave.configurationV1.configurationSet(parameterNumber: 0xC9, size: 2, scaledConfigurationValue: tempoff),
+		zwave.configurationV1.configurationSet(parameterNumber: 0xC9, size: 1, scaledConfigurationValue: tempoff),
 		
         // configure humidity offset
-		zwave.configurationV1.configurationSet(parameterNumber: 0xCA, size: 2, scaledConfigurationValue: humidityoff),
+		zwave.configurationV1.configurationSet(parameterNumber: 0xCA, size: 1, scaledConfigurationValue: humidityoff),
 		
         // configure luminance offset
 		zwave.configurationV1.configurationSet(parameterNumber: 0xCB, size: 2, scaledConfigurationValue: luminanceoff),
 		
         // configure ultraviolet offset
-		zwave.configurationV1.configurationSet(parameterNumber: 0xCC, size: 2, scaledConfigurationValue: ultravioletoff), 
+		zwave.configurationV1.configurationSet(parameterNumber: 0xCC, size: 1, scaledConfigurationValue: ultravioletoff), 
+		
+        zwave.configurationV1.configurationGet(parameterNumber: 0x6F),
+    	zwave.configurationV1.configurationGet(parameterNumber: 0x03),
+    	zwave.configurationV1.configurationGet(parameterNumber: 0x04),
+    	zwave.configurationV1.configurationGet(parameterNumber: 0x28),
+    	zwave.configurationV1.configurationGet(parameterNumber: 0xC9),
+        zwave.configurationV1.configurationGet(parameterNumber: 0xCA),
+        zwave.configurationV1.configurationGet(parameterNumber: 0xCB),
+        zwave.configurationV1.configurationGet(parameterNumber: 0xCC),
 
 		zwave.batteryV1.batteryGet(),
 		zwave.sensorBinaryV2.sensorBinaryGet(),
